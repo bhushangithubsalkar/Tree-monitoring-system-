@@ -1,9 +1,10 @@
-import { LayoutDashboard, TreePine, MapPin, Bell, AlertTriangle, Building2 } from 'lucide-react';
+import { LayoutDashboard, TreePine, BarChart3, MapPin, Bell, AlertTriangle, Building2 } from 'lucide-react';
 
 export default function Sidebar({ activePage, setActivePage }) {
   const menuItems = [
     { id: 'dashboard', label: 'Dashboard', icon: LayoutDashboard },
     { id: 'trees', label: 'Trees', icon: TreePine },
+    { id: 'analytics', label: 'Analytics', icon: BarChart3 },
     { id: 'map', label: 'Tree Map', icon: MapPin },
     { id: 'alerts', label: 'Alerts', icon: Bell },
     { id: 'report', label: 'Report Risky Tree', icon: AlertTriangle },

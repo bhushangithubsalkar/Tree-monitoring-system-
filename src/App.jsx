@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { lazy, Suspense, useState } from 'react';
 import Sidebar from './components/Dashboard/Sidebar';
 import DashboardPage from './pages/DashboardPage';
 import TreesManagement from './pages/TreesManagement';
@@ -7,13 +7,33 @@ import AlertPage from './pages/AlertPage';
 import ReportRiskyTreePage from './pages/ReportRiskyTreePage';
 import MunicipalInfoPage from './pages/MunicipalInfoPage';
 
+const AnalyticsPage = lazy(() => import('./pages/AnalyticsPage'));
+
 export default function App() {
   const [activePage, setActivePage] = useState('report'); // Default to 'report' to view your form
+  const [selectedTreeId, setSelectedTreeId] = useState('');
 
   const renderPage = () => {
     switch (activePage) {
       case 'dashboard': return <DashboardPage onNavigate={setActivePage} />;
-      case 'trees': return <TreesManagement />;
+      case 'trees':
+        return (
+          <TreesManagement
+            onSelectTree={(treeId) => {
+              setSelectedTreeId(treeId);
+              setActivePage('analytics');
+            }}
+          />
+        );
+      case 'analytics':
+        return (
+          <Suspense fallback={<div className="analytics-message">Loading analytics…</div>}>
+            <AnalyticsPage
+              initialSelectedTreeId={selectedTreeId}
+              onTreeSelect={setSelectedTreeId}
+            />
+          </Suspense>
+        );
       case 'map': return <TreeMap />;
       case 'alerts': return <AlertPage />;
       case 'report': return <ReportRiskyTreePage />;
