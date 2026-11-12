@@ -15,7 +15,15 @@ export default function App() {
 
   const renderPage = () => {
     switch (activePage) {
-      case 'dashboard': return <DashboardPage onNavigate={setActivePage} />;
+      case 'dashboard':
+        return (
+          <DashboardPage
+            onNavigate={(page, treeId) => {
+              if (treeId) setSelectedTreeId(treeId);
+              setActivePage(page);
+            }}
+          />
+        );
       case 'trees':
         return (
           <TreesManagement

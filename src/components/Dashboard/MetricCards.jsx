@@ -1,20 +1,25 @@
-import React from 'react';
-
-export default function MetricCards() {
+export default function MetricCards({
+  totalTrees,
+  onlineTrees,
+  alerts,
+  reports,
+  loadingTrees,
+  loadingReports,
+}) {
   const metrics = [
-    { label: 'Total Trees', value: '3', sub: 'Registered trees' },
-    { label: 'Online', value: '2', sub: 'Recent sensor data' },
-    { label: 'Alerts', value: '1', sub: 'Open conditions' },
-    { label: 'Public Reports', value: '1', sub: 'Citizen reports' },
+    { label: 'Total Trees', value: totalTrees, sub: 'Registered in Firebase', loading: loadingTrees },
+    { label: 'Online', value: onlineTrees, sub: 'Reporting within 5 minutes', loading: loadingTrees },
+    { label: 'Alerts', value: alerts, sub: 'Warning or critical status', loading: loadingTrees },
+    { label: 'Public Reports', value: reports, sub: 'Citizen reports in Firebase', loading: loadingReports },
   ];
 
   return (
     <div className="metrics-grid">
-      {metrics.map((m, index) => (
-        <div className="metric-card" key={index}>
-          <span className="metric-label">{m.label}</span>
-          <h3 className="metric-value">{m.value}</h3>
-          <span className="metric-sub">{m.sub}</span>
+      {metrics.map((metric) => (
+        <div className="metric-card" key={metric.label}>
+          <span className="metric-label">{metric.label}</span>
+          <h3 className="metric-value">{metric.loading ? '…' : metric.value}</h3>
+          <span className="metric-sub">{metric.sub}</span>
         </div>
       ))}
     </div>

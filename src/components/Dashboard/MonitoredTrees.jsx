@@ -1,62 +1,8 @@
-import { useEffect, useState } from 'react';
 import { Plus } from 'lucide-react';
-import { onValue, ref } from 'firebase/database';
-import { database } from '../../firebase';
 
-const getTreeStatusClass = (status) => {
-  const normalizedStatus = status.toLowerCase();
-  if (normalizedStatus.includes('critical') || normalizedStatus.includes('danger')) {
-    return 'critical';
-  }
-  if (normalizedStatus.includes('warning')) {
-    return 'warning';
-  }
-  return 'normal';
-};
+const getStatusClass = (status) => status.toLowerCase();
 
-export default function MonitoredTrees({ onAddTree }) {
-  const [trees, setTrees] = useState([]);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState('');
-
-  useEffect(() => {
-    const unsubscribe = onValue(
-      ref(database, 'trees'),
-      (snapshot) => {
-        const data = snapshot.val();
-        const loadedTrees = data
-          ? Object.entries(data).map(([key, value]) => {
-            const tree = value && typeof value === 'object' ? value : {};
-            const profile = tree.profile && typeof tree.profile === 'object' ? tree.profile : {};
-            const latest = tree.latest && typeof tree.latest === 'object' ? tree.latest : {};
-            const species = tree.species || profile.species || 'Unknown species';
-            const location = tree.location || profile.location || profile.gps_coordinates || 'Location unavailable';
-            const status = tree.condition || latest.status || 'Normal';
-            const onlineValue = tree.online ?? tree.isOnline ?? latest.online;
-
-            return {
-              id: tree.id || key,
-              name: tree.name || profile.name || species,
-              species: `${species} • ${location}`,
-              status,
-              online: typeof onlineValue === 'boolean' ? onlineValue : null,
-            };
-          }).sort((a, b) => a.id.localeCompare(b.id))
-          : [];
-
-        setTrees(loadedTrees);
-        setError('');
-        setLoading(false);
-      },
-      (firebaseError) => {
-        setError(`Could not load trees from Firebase: ${firebaseError.message}`);
-        setLoading(false);
-      },
-    );
-
-    return unsubscribe;
-  }, []);
-
+export default function MonitoredTrees({ trees, loading, error, onAddTree }) {
   return (
     <div className="panel">
       <div className="panel-header">
@@ -77,15 +23,15 @@ export default function MonitoredTrees({ onAddTree }) {
           trees.map((tree) => (
             <div className="tree-item" key={tree.id}>
               <div className="tree-info">
-                <h4>{tree.id} — {tree.name}</h4>
-                <p>{tree.species}</p>
+                <h4>{tree.id} — {tree.health.name}</h4>
+                <p>{tree.health.species} • {tree.health.location}</p>
               </div>
               <div className="tree-status-box">
-                <span className={`status-pill ${getTreeStatusClass(tree.status)}`}>
-                  {tree.status}
+                <span className={`status-pill ${getStatusClass(tree.health.status)}`}>
+                  {tree.health.status}
                 </span>
                 <span className="connection-text">
-                  • {tree.online === null ? 'Connection unknown' : tree.online ? 'Online' : 'Offline'}
+                  • {tree.health.online ? 'Online' : 'Offline'}
                 </span>
               </div>
             </div>

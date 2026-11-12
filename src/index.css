@@ -324,6 +324,21 @@ body {
   margin-bottom: 14px;
 }
 
+.ai-content-box.warning {
+  background-color: #eff6ff;
+  border-left-color: #2563eb;
+}
+
+.ai-content-box.critical {
+  background-color: #fef2f2;
+  border-left-color: #dc2626;
+}
+
+.ai-content-box.no-data {
+  background-color: #f3f4f6;
+  border-left-color: #94a3b8;
+}
+
 .ai-content-box h4 {
   font-size: 14px;
   font-weight: 700;
@@ -341,6 +356,68 @@ body {
   font-size: 11px;
   color: #8da898;
   line-height: 1.3;
+}
+
+.analytics-view-button {
+  margin-bottom: 12px;
+  border: 0;
+  background: transparent;
+  color: #1b4d3e;
+  font-size: 12px;
+  font-weight: 700;
+  cursor: pointer;
+}
+
+.analytics-view-button:hover {
+  text-decoration: underline;
+}
+
+.analytics-trend-subtitle {
+  margin-top: 4px;
+  color: #788a80;
+  font-size: 11px;
+}
+
+.dashboard-trends-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 18px;
+}
+
+.trend-box {
+  min-width: 0;
+  padding: 14px;
+  border: 1px solid #edf2ef;
+  border-radius: 8px;
+  background: #f9fbf9;
+}
+
+.trend-box-heading {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  color: #1b4d3e;
+  font-size: 12px;
+  font-weight: 600;
+}
+
+.trend-box-heading strong {
+  font-size: 11px;
+}
+
+.dashboard-trend-chart {
+  position: relative;
+  height: 150px;
+  margin-top: 8px;
+}
+
+.dashboard-trend-empty {
+  display: grid;
+  height: 150px;
+  place-items: center;
+  color: #8da898;
+  font-size: 12px;
 }
 
 /* Full-day sensor analytics */
@@ -1235,6 +1312,10 @@ body {
 
 @media (max-width: 760px) {
   .analytics-graphs-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .dashboard-trends-grid {
     grid-template-columns: 1fr;
   }
 
