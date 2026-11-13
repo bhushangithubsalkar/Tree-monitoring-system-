@@ -92,15 +92,16 @@ function getRecentTreeReadings(tree) {
     ? timestamped.filter((reading) => reading.timestamp >= cutoff)
     : readings.slice(-24);
   const latest = normalizeReading(tree.latest, 'latest');
+  const visibleReadings = recent.length ? recent : readings.slice(-24);
 
   if (
     latest
     && latest.timestamp === null
-    && !recent.some((reading) => Object.keys(SENSOR_FIELDS).every((key) => reading[key] === latest[key]))
+    && !visibleReadings.some((reading) => Object.keys(SENSOR_FIELDS).every((key) => reading[key] === latest[key]))
   ) {
-    recent.push(latest);
+    visibleReadings.push(latest);
   }
-  return recent;
+  return visibleReadings;
 }
 
 function isOnline(tree, readings) {

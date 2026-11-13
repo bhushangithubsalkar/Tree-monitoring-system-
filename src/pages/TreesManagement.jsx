@@ -61,10 +61,10 @@ export default function TreesManagement({ onSelectTree }) {
         const loadedTrees = data
           ? Object.entries(data).map(([key, value]) => {
               const tree = value && typeof value === 'object' ? value : {};
-          const latestStatus = tree.latest?.status;
-          const condition = ['Normal', 'Warning', 'Critical'].includes(latestStatus)
-            ? latestStatus
-            : typeof tree.condition === 'string' ? tree.condition : 'Normal';
+              const latestStatus = tree.latest?.status;
+              const condition = ['Normal', 'Warning', 'Critical'].includes(latestStatus)
+                ? latestStatus
+                : typeof tree.condition === 'string' ? tree.condition : 'Normal';
 
               return {
                 databaseKey: key,
