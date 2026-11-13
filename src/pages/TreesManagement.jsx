@@ -2,8 +2,6 @@ import { useEffect, useState } from 'react';
 import QRCode from 'react-qr-code';
 import {
   TreePine,
-  RotateCw,
-  ToggleLeft,
   Plus,
   Edit,
   Trash2,
@@ -63,7 +61,10 @@ export default function TreesManagement({ onSelectTree }) {
         const loadedTrees = data
           ? Object.entries(data).map(([key, value]) => {
               const tree = value && typeof value === 'object' ? value : {};
-              const condition = typeof tree.condition === 'string' ? tree.condition : 'Normal';
+          const latestStatus = tree.latest?.status;
+          const condition = ['Normal', 'Warning', 'Critical'].includes(latestStatus)
+            ? latestStatus
+            : typeof tree.condition === 'string' ? tree.condition : 'Normal';
 
               return {
                 databaseKey: key,
@@ -164,6 +165,7 @@ export default function TreesManagement({ onSelectTree }) {
           location,
           condition,
           statusType,
+          'latest/status': condition,
         });
       } else {
         const treeRef = ref(database, `trees/${id}`);
@@ -174,14 +176,7 @@ export default function TreesManagement({ onSelectTree }) {
         }
         await set(treeRef, {
           ...treeData,
-          latest: {
-            soilMoisture: 55,
-            temperature: 30,
-            humidity: 60,
-            gasPPM: 45,
-            tiltAngle: 0.4,
-            status: formData.condition
-          }
+          latest: { status: formData.condition },
         });
       }
 
@@ -222,14 +217,6 @@ export default function TreesManagement({ onSelectTree }) {
             <h1 className="page-title">Trees Management</h1>
             <p className="page-subtitle">Click any tree row to inspect live sensor telemetry and info</p>
           </div>
-        </div>
-        <div className="topbar-actions">
-          <button className="topbar-btn demo-mode-btn">
-            <ToggleLeft size={16} /> Demo mode
-          </button>
-          <button className="topbar-btn refresh-btn">
-            <RotateCw size={14} /> Refresh
-          </button>
         </div>
       </div>
 
@@ -372,7 +359,9 @@ export default function TreesManagement({ onSelectTree }) {
                   <Droplet size={20} style={{ color: '#0284c7' }} />
                   <div>
                     <span style={{ fontSize: '11px', color: '#6c7d73', display: 'block' }}>Soil Moisture</span>
-                    <strong style={{ fontSize: '15px', color: '#1a2e23' }}>{treeSensorDetails?.latest?.soilMoisture ?? '60'}%</strong>
+                    <strong style={{ fontSize: '15px', color: '#1a2e23' }}>
+                      {treeSensorDetails?.latest?.soil_moisture ?? treeSensorDetails?.latest?.soilMoisture ?? '—'}%
+                    </strong>
                   </div>
                 </div>
 
@@ -380,7 +369,19 @@ export default function TreesManagement({ onSelectTree }) {
                   <Thermometer size={20} style={{ color: '#ea580c' }} />
                   <div>
                     <span style={{ fontSize: '11px', color: '#6c7d73', display: 'block' }}>Temperature</span>
-                    <strong style={{ fontSize: '15px', color: '#1a2e23' }}>{treeSensorDetails?.latest?.temperature ?? '31'}°C</strong>
+                    <strong style={{ fontSize: '15px', color: '#1a2e23' }}>
+                      {treeSensorDetails?.latest?.temperature ?? '—'}°C
+                    </strong>
+                  </div>
+                </div>
+
+                <div style={{ background: '#fff', border: '1px solid #e2e8e4', padding: '12px', borderRadius: '8px', display: 'flex', alignItems: 'center', gap: '10px' }}>
+                  <Droplet size={20} style={{ color: '#0284c7' }} />
+                  <div>
+                    <span style={{ fontSize: '11px', color: '#6c7d73', display: 'block' }}>Humidity</span>
+                    <strong style={{ fontSize: '15px', color: '#1a2e23' }}>
+                      {treeSensorDetails?.latest?.humidity ?? '—'}% RH
+                    </strong>
                   </div>
                 </div>
 
@@ -388,15 +389,19 @@ export default function TreesManagement({ onSelectTree }) {
                   <Wind size={20} style={{ color: '#0d9488' }} />
                   <div>
                     <span style={{ fontSize: '11px', color: '#6c7d73', display: 'block' }}>MQ-2 Gas / Air</span>
-                    <strong style={{ fontSize: '15px', color: '#1a2e23' }}>{treeSensorDetails?.latest?.gasPPM ?? '42'} PPM</strong>
+                    <strong style={{ fontSize: '15px', color: '#1a2e23' }}>
+                      {treeSensorDetails?.latest?.gas_level ?? '—'} PPM
+                    </strong>
                   </div>
                 </div>
 
                 <div style={{ background: '#fff', border: '1px solid #e2e8e4', padding: '12px', borderRadius: '8px', display: 'flex', alignItems: 'center', gap: '10px' }}>
                   <AlertTriangle size={20} style={{ color: '#ca8a04' }} />
                   <div>
-                    <span style={{ fontSize: '11px', color: '#6c7d73', display: 'block' }}>Tilt / Gyro Drift</span>
-                    <strong style={{ fontSize: '15px', color: '#1a2e23' }}>{treeSensorDetails?.latest?.tiltAngle ?? '0.3'}°</strong>
+                    <span style={{ fontSize: '11px', color: '#6c7d73', display: 'block' }}>Tilt</span>
+                    <strong style={{ fontSize: '15px', color: '#1a2e23' }}>
+                      {treeSensorDetails?.latest?.tilt ?? treeSensorDetails?.latest?.gyro_x ?? '—'}°
+                    </strong>
                   </div>
                 </div>
               </div>

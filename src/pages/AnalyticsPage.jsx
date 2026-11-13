@@ -68,7 +68,7 @@ const sensorDefinitions = [
   { key: 'temperature', title: 'Temperature', unit: '°C', aliases: ['temperature', 'temp'] },
   { key: 'humidity', title: 'Humidity', unit: '% RH', aliases: ['humidity', 'relativeHumidity', 'relative_humidity'] },
   { key: 'gas', title: 'MQ-2 Gas', unit: 'PPM / analog', aliases: ['gasPPM', 'gas_ppm', 'gas_level', 'mq2', 'mq2_ppm', 'gas'] },
-  { key: 'tilt', title: 'Gyro / Tilt', unit: '°', aliases: ['tiltAngle', 'tilt_angle', 'angle', 'gyro'] },
+  { key: 'tilt', title: 'Gyro / Tilt', unit: '°', aliases: ['tilt', 'gyro_x', 'tiltAngle', 'tilt_angle', 'angle', 'gyro'] },
 ];
 
 function readNumber(record, aliases) {
@@ -198,9 +198,8 @@ function getTreeName(tree, id) {
 function getRecentReadings(history) {
   const cutoff = Date.now() - DAY_MS;
   const timestamped = history.filter((reading) => reading.timestamp !== null);
-  return timestamped.length
-    ? timestamped.filter((reading) => reading.timestamp >= cutoff)
-    : history.slice(-24);
+  const recentReadings = timestamped.filter((reading) => reading.timestamp >= cutoff);
+  return recentReadings.length ? recentReadings : history.slice(-24);
 }
 
 function hasSustainedCondition(readings, key, predicate, durationMs) {
@@ -530,7 +529,7 @@ export default function AnalyticsPage({ initialSelectedTreeId = '', onTreeSelect
       <div className="dashboard-topbar">
         <div>
           <h1 className="page-title">Analytics</h1>
-          <p className="page-subtitle">Full-day sensor readings</p>
+          <p className="page-subtitle">Recent sensor readings from Firebase</p>
         </div>
       </div>
 

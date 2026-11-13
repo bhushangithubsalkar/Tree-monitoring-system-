@@ -1,81 +1,102 @@
-import React from 'react';
-import { MapPin, RotateCw, ToggleLeft, ExternalLink } from 'lucide-react';
+import { useEffect, useState } from 'react';
+import { ExternalLink, MapPin } from 'lucide-react';
+import { onValue, ref } from 'firebase/database';
+import { database } from '../firebase';
+
+function getTreeLocation(tree) {
+  const profile = tree.profile && typeof tree.profile === 'object' ? tree.profile : {};
+  const coordinates = tree.gps_coordinates || profile.gps_coordinates;
+  return {
+    coordinates: Array.isArray(coordinates) ? coordinates.join(', ') : coordinates || '',
+    location: tree.location || profile.location || profile.ward || '',
+    name: tree.name || profile.name || '',
+  };
+}
 
 export default function TreeMap() {
-  const treeLocations = [
-    {
-      id: 'TREE-001',
-      name: 'Main Road Banyan',
-      ward: 'Ward A',
-      coords: '19.2215, 72.8541', // Example coordinates (e.g., Kandivali, Mumbai)
+  const [trees, setTrees] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState('');
+
+  useEffect(() => onValue(
+    ref(database, 'trees'),
+    (snapshot) => {
+      const data = snapshot.val();
+      const loadedTrees = data && typeof data === 'object'
+        ? Object.entries(data)
+          .filter(([, tree]) => tree && typeof tree === 'object')
+          .map(([id, tree]) => ({ id, ...tree }))
+          .sort((a, b) => a.id.localeCompare(b.id))
+        : [];
+      setTrees(loadedTrees);
+      setLoading(false);
+      setError('');
     },
-    {
-      id: 'TREE-002',
-      name: 'School Road Tree',
-      ward: 'Ward B',
-      coords: '19.2230, 72.8560',
+    (firebaseError) => {
+      setError(`Could not load tree locations from Firebase: ${firebaseError.message}`);
+      setLoading(false);
     },
-    {
-      id: 'TREE-003',
-      name: 'Park Tree',
-      ward: 'Ward C',
-      coords: '19.2198, 72.8512',
-    },
-  ];
+  ), []);
 
   const handleOpenLocation = (tree) => {
-    // Opens Google Maps using the coordinates
-    const mapsUrl = `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(tree.coords)}`
-    window.open(mapsUrl, '_blank');
+    const { coordinates, location, name } = getTreeLocation(tree);
+    const query = coordinates || [name, location, tree.id].filter(Boolean).join(', ');
+    if (!query) {
+      return;
+    }
+
+    const mapsUrl = `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(query)}`;
+    window.open(mapsUrl, '_blank', 'noopener,noreferrer');
   };
 
   return (
     <div className="treemap-content-wrapper">
-      {/* Page Header */}
       <div className="dashboard-topbar">
         <div className="treemap-title-area">
           <MapPin size={24} className="treemap-header-icon" />
           <div>
             <h1 className="page-title">Tree Map</h1>
-            <p className="page-subtitle">GPS locations of monitored trees</p>
+            <p className="page-subtitle">Locations of monitored trees from Firebase</p>
           </div>
-        </div>
-        <div className="topbar-actions">
-          <button className="topbar-btn demo-mode-btn">
-            <ToggleLeft size={16} /> Demo mode
-          </button>
-          <button className="topbar-btn refresh-btn">
-            <RotateCw size={14} /> Refresh
-          </button>
         </div>
       </div>
 
-      {/* Main Panel Card */}
       <div className="panel treemap-main-panel">
         <div className="treemap-section-header">
           <h2>Tree Locations</h2>
           <p className="treemap-notice">
-            For a production deployment, replace the simple location links below with Google Maps, Leaflet/OpenStreetMap, or another approved mapping service.
+            Map searches use saved GPS coordinates when available, or the tree’s location and name.
           </p>
         </div>
 
-        {/* Tree Location Cards Grid */}
-        <div className="treemap-grid">
-          {treeLocations.map((tree) => (
-            <div className="treemap-card" key={tree.id}>
-              <div className="treemap-card-info">
-                <h4>{tree.id} — {tree.name}</h4>
-                <p>{tree.ward}</p>
-              </div>
-              <button 
-                className="open-location-link"
-                onClick={() => handleOpenLocation(tree)}
-              >
-                Open location <ExternalLink size={13} />
-              </button>
-            </div>
-          ))}
-        </div>
+        {error && <p className="trees-error-message" role="alert">{error}</p>}
+        {loading ? (
+          <p className="trees-table-message">Loading tree locations from Firebase…</p>
+        ) : trees.length === 0 ? (
+          <p className="trees-table-message">No trees are registered in Firebase.</p>
+        ) : (
+          <div className="treemap-grid">
+            {trees.map((tree) => {
+              const { coordinates, location, name } = getTreeLocation(tree);
+              const hasLocation = Boolean(coordinates || location || name);
+              return (
+                <div className="treemap-card" key={tree.id}>
+                  <div className="treemap-card-info">
+                    <h4>{tree.id} — {name || 'Unnamed tree'}</h4>
+                    <p>{location || coordinates || 'Location unavailable'}</p>
+                  </div>
+                  {hasLocation ? (
+                    <button className="open-location-link" onClick={() => handleOpenLocation(tree)}>
+                      Open location <ExternalLink size={13} />
+                    </button>
+                  ) : (
+                    <span className="trees-table-message">Add a location to this tree</span>
+                  )}
+                </div>
+              );
+            })}
+          </div>
+        )}
       </div>
     </div>
   );

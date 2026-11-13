@@ -1,29 +1,71 @@
-import React, { useState } from 'react';
-import { AlertTriangle, ToggleLeft, RotateCw, CheckCircle2 } from 'lucide-react';
+import { useEffect, useState } from 'react';
+import { AlertTriangle, CheckCircle2 } from 'lucide-react';
+import { onValue, push, ref } from 'firebase/database';
+import { database } from '../firebase';
+
+const initialFormData = {
+  name: '',
+  contact: '',
+  treeId: '',
+  location: '',
+  condition: 'Tree leaning',
+  urgency: 'Normal',
+  description: '',
+  photoUrl: '',
+};
 
 export default function ReportRiskyTreePage() {
-  const [formData, setFormData] = useState({
-    name: '',
-    contact: '',
-    treeId: 'TREE-001',
-    location: '',
-    condition: 'Tree leaning',
-    urgency: 'Normal',
-    description: '',
-    photoUrl: ''
-  });
+  const [formData, setFormData] = useState(initialFormData);
 
   const [submitted, setSubmitted] = useState(false);
+  const [trees, setTrees] = useState([]);
+  const [isLoadingTrees, setIsLoadingTrees] = useState(true);
+  const [isSubmitting, setIsSubmitting] = useState(false);
+  const [error, setError] = useState('');
+
+  useEffect(() => onValue(
+    ref(database, 'trees'),
+    (snapshot) => {
+      const data = snapshot.val();
+      const loadedTrees = data && typeof data === 'object'
+        ? Object.entries(data)
+          .filter(([, tree]) => tree && typeof tree === 'object')
+          .map(([id, tree]) => ({ id, name: tree.name || tree.profile?.name || id }))
+          .sort((a, b) => a.id.localeCompare(b.id))
+        : [];
+      setTrees(loadedTrees);
+      setIsLoadingTrees(false);
+      setError('');
+    },
+    (firebaseError) => {
+      setError(`Could not load trees from Firebase: ${firebaseError.message}`);
+      setIsLoadingTrees(false);
+    },
+  ), []);
 
   const handleChange = (e) => {
     const { name, value } = e.target;
     setFormData(prev => ({ ...prev, [name]: value }));
   };
 
-  const handleSubmit = (e) => {
+  const handleSubmit = async (e) => {
     e.preventDefault();
-    setSubmitted(true);
-    // In production, send data to Firebase / Backend here
+    setIsSubmitting(true);
+    setError('');
+    try {
+      await push(ref(database, 'reports'), {
+        ...formData,
+        treeId: formData.treeId.trim(),
+        createdAt: Date.now(),
+        status: 'Open',
+      });
+      setFormData(initialFormData);
+      setSubmitted(true);
+    } catch (firebaseError) {
+      setError(`Could not submit report to Firebase: ${firebaseError.message}`);
+    } finally {
+      setIsSubmitting(false);
+    }
   };
 
   return (
@@ -37,14 +79,6 @@ export default function ReportRiskyTreePage() {
           </div>
           <p className="page-subtitle">Public tree-risk reporting form</p>
         </div>
-        <div className="topbar-actions">
-          <button className="topbar-btn demo-mode-btn">
-            <ToggleLeft size={16} /> Demo mode
-          </button>
-          <button className="topbar-btn refresh-btn">
-            <RotateCw size={14} /> Refresh
-          </button>
-        </div>
       </div>
 
       {submitted ? (
@@ -56,6 +90,7 @@ export default function ReportRiskyTreePage() {
         </div>
       ) : (
         <div className="report-grid-layout">
+          {error && <p className="trees-error-message" role="alert">{error}</p>}
           {/* Left Form Section */}
           <div className="panel form-panel">
             <div className="panel-section-header">
@@ -92,12 +127,21 @@ export default function ReportRiskyTreePage() {
               <div className="form-row">
                 <div className="form-group">
                   <label>Tree ID (if known)</label>
-                  <input 
-                    type="text" 
+                  <select
                     name="treeId" 
                     value={formData.treeId} 
                     onChange={handleChange} 
-                  />
+                    disabled={isLoadingTrees}
+                  >
+                    <option value="">
+                      {isLoadingTrees ? 'Loading trees…' : 'No tree selected'}
+                    </option>
+                    {trees.map((tree) => (
+                      <option key={tree.id} value={tree.id}>
+                        {tree.id} — {tree.name}
+                      </option>
+                    ))}
+                  </select>
                 </div>
                 <div className="form-group">
                   <label>Location / landmark</label>
@@ -154,7 +198,9 @@ export default function ReportRiskyTreePage() {
                 />
               </div>
 
-              <button type="submit" className="submit-report-btn">Submit Report</button>
+              <button type="submit" className="submit-report-btn" disabled={isSubmitting}>
+                {isSubmitting ? 'Submitting…' : 'Submit Report'}
+              </button>
             </form>
           </div>
 

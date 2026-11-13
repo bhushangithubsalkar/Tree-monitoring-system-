@@ -5,11 +5,12 @@ export default function MetricCards({
   reports,
   loadingTrees,
   loadingReports,
+  loadingAlerts,
 }) {
   const metrics = [
     { label: 'Total Trees', value: totalTrees, sub: 'Registered in Firebase', loading: loadingTrees },
     { label: 'Online', value: onlineTrees, sub: 'Reporting within 5 minutes', loading: loadingTrees },
-    { label: 'Alerts', value: alerts, sub: 'Warning or critical status', loading: loadingTrees },
+    { label: 'Alerts', value: alerts, sub: 'Active alerts in Firebase', loading: loadingAlerts },
     { label: 'Public Reports', value: reports, sub: 'Citizen reports in Firebase', loading: loadingReports },
   ];
 

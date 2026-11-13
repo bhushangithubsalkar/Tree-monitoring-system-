@@ -15,7 +15,7 @@ const SENSOR_FIELDS = {
   temperature: ['temperature', 'temp'],
   humidity: ['humidity', 'relativeHumidity', 'relative_humidity'],
   gas: ['gasPPM', 'gas_ppm', 'gas_level', 'mq2', 'mq2_ppm', 'gas'],
-  tilt: ['tiltAngle', 'tilt_angle', 'angle', 'gyro'],
+  tilt: ['tilt', 'gyro_x', 'tiltAngle', 'tilt_angle', 'angle', 'gyro'],
 };
 
 function getNestedObject(value) {
@@ -247,10 +247,13 @@ function getTreeHealth(tree) {
 export default function DashboardPage({ onNavigate }) {
   const [trees, setTrees] = useState([]);
   const [reportsCount, setReportsCount] = useState(0);
+  const [alertsCount, setAlertsCount] = useState(0);
   const [loadingTrees, setLoadingTrees] = useState(true);
   const [loadingReports, setLoadingReports] = useState(true);
+  const [loadingAlerts, setLoadingAlerts] = useState(true);
   const [treeError, setTreeError] = useState('');
   const [reportsError, setReportsError] = useState('');
+  const [alertsError, setAlertsError] = useState('');
   const [selectedTreeId, setSelectedTreeId] = useState('');
 
   useEffect(() => {
@@ -294,10 +297,27 @@ export default function DashboardPage({ onNavigate }) {
         setLoadingReports(false);
       },
     );
+    const unsubscribeAlerts = onValue(
+      ref(database, 'Alerts'),
+      (snapshot) => {
+        const data = snapshot.val();
+        const activeAlerts = data && typeof data === 'object'
+          ? Object.values(data).filter((alert) => alert?.active).length
+          : 0;
+        setAlertsCount(activeAlerts);
+        setLoadingAlerts(false);
+        setAlertsError('');
+      },
+      (error) => {
+        setAlertsError(`Could not load active alerts: ${error.message}`);
+        setLoadingAlerts(false);
+      },
+    );
 
     return () => {
       unsubscribeTrees();
       unsubscribeReports();
+      unsubscribeAlerts();
     };
   }, []);
 
@@ -306,9 +326,6 @@ export default function DashboardPage({ onNavigate }) {
     [trees],
   );
   const selectedTree = treeSummaries.find((tree) => tree.id === selectedTreeId) || treeSummaries[0];
-  const activeAlerts = treeSummaries.filter(
-    (tree) => tree.health.status === 'Warning' || tree.health.status === 'Critical',
-  ).length;
   const onlineTrees = treeSummaries.filter((tree) => tree.health.online).length;
   const healthSummary = treeSummaries.reduce((summary, tree) => {
     const rank = { 'No data': 0, Normal: 1, Warning: 2, Critical: 3 };
@@ -320,13 +337,15 @@ export default function DashboardPage({ onNavigate }) {
       <Header title="Dashboard" subtitle="Live overview of monitored trees" />
       {treeError && <p className="trees-error-message" role="alert">{treeError}</p>}
       {reportsError && <p className="trees-error-message" role="alert">{reportsError}</p>}
+      {alertsError && <p className="trees-error-message" role="alert">{alertsError}</p>}
       <MetricCards
         totalTrees={trees.length}
         onlineTrees={onlineTrees}
-        alerts={activeAlerts}
+        alerts={alertsCount}
         reports={reportsCount}
         loadingTrees={loadingTrees}
         loadingReports={loadingReports}
+        loadingAlerts={loadingAlerts}
       />
 
       <div className="dashboard-grid-row">

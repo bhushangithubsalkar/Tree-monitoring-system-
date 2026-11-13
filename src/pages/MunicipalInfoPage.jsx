@@ -1,6 +1,39 @@
-import { Building2, ExternalLink, Megaphone, RotateCw, ToggleLeft, TreePine } from 'lucide-react';
+import { useEffect, useState } from 'react';
+import { Building2, ExternalLink, Megaphone, TreePine } from 'lucide-react';
+import { onValue, ref } from 'firebase/database';
+import { database } from '../firebase';
 
 export default function MunicipalInfoPage() {
+  const [counts, setCounts] = useState({ trees: 0, alerts: 0, reports: 0 });
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState('');
+
+  useEffect(() => {
+    let loadedSources = 0;
+    const handleLoaded = () => {
+      loadedSources += 1;
+      if (loadedSources === 3) setLoading(false);
+    };
+    const subscriptions = [
+      ['trees', (data) => Object.keys(data || {}).length],
+      ['Alerts', (data) => Object.values(data || {}).filter((alert) => alert?.active).length],
+      ['reports', (data) => Object.keys(data || {}).length],
+    ].map(([path, countRecords]) => onValue(
+      ref(database, path),
+      (snapshot) => {
+        setCounts((current) => ({ ...current, [path === 'Alerts' ? 'alerts' : path]: countRecords(snapshot.val()) }));
+        handleLoaded();
+        setError('');
+      },
+      (firebaseError) => {
+        setError(`Could not load municipal dashboard data: ${firebaseError.message}`);
+        handleLoaded();
+      },
+    ));
+
+    return () => subscriptions.forEach((unsubscribe) => unsubscribe());
+  }, []);
+
   const handleOpenBmcPortal = () => {
     window.open('https://portal.mcgm.gov.in', '_blank', 'noopener,noreferrer');
   };
@@ -15,17 +48,10 @@ export default function MunicipalInfoPage() {
             <p className="page-subtitle">Official municipal information</p>
           </div>
         </div>
-        <div className="topbar-actions">
-          <button className="topbar-btn demo-mode-btn">
-            <ToggleLeft size={16} /> Demo mode
-          </button>
-          <button className="topbar-btn refresh-btn">
-            <RotateCw size={14} /> Refresh
-          </button>
-        </div>
       </div>
 
       <div className="panel municipal-main-panel">
+        {error && <p className="trees-error-message" role="alert">{error}</p>}
         <div className="municipal-section-header">
           <h2>BMC / Municipal Information</h2>
           <p className="municipal-description">
@@ -36,24 +62,24 @@ export default function MunicipalInfoPage() {
         <div className="municipal-cards-grid">
           <div className="municipal-card">
             <div className="municipal-card-icon-title">
-              <Building2 size={20} className="card-icon" />
-              <span>Department</span>
-            </div>
-            <h4>Garden and Tree Authority</h4>
-          </div>
-          <div className="municipal-card">
-            <div className="municipal-card-icon-title">
               <TreePine size={20} className="card-icon green-icon" />
-              <span>Tree-related work</span>
+              <span>Trees monitored</span>
             </div>
-            <h4>Planting, pruning and action concerning dead or dangerous trees and branches.</h4>
+            <h4>{loading ? '…' : counts.trees}</h4>
           </div>
           <div className="municipal-card">
             <div className="municipal-card-icon-title">
               <Megaphone size={20} className="card-icon red-icon" />
-              <span>Public complaints</span>
+              <span>Active alerts</span>
             </div>
-            <h4>Use official BMC complaint and contact channels for current reporting procedures.</h4>
+            <h4>{loading ? '…' : counts.alerts}</h4>
+          </div>
+          <div className="municipal-card">
+            <div className="municipal-card-icon-title">
+              <Building2 size={20} className="card-icon" />
+              <span>Public reports received</span>
+            </div>
+            <h4>{loading ? '…' : counts.reports}</h4>
           </div>
         </div>
 
